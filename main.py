@@ -542,7 +542,6 @@ st.divider()
 with st.expander("Notes"):
     st.markdown(
         "- **WRs**: we use *LWR, RWR, SWR* starters from Ourlads (fallback to top WRs if needed).\n"
-        "- **QBs**: away shows top 2; home shows top 1 (per your template). RB shows 3; TE shows 1.\n"
-        "- We strip trailing Ourlads tags like `23/3`, `U/NYG`, `SF24` and format names to standard case.\n"
+        "- **QBs**: QBs shows 1. RB shows 3; TE shows 1.\n"
         "- Times are presented as provided by Fox (treated as ET in the template text).\n"
     )
