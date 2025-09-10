@@ -246,7 +246,7 @@ def render_game_html(row: pd.Series, away_off: dict, home_off: dict, season_year
     loc = location_line(row.get("venue") or "", row.get("city") or "")
     network = row.get("network") or ""
 
-    away_qb_block = _bold_lines(away_off.get("qb", []), 2)
+    away_qb_block = _bold_lines(away_off.get("qb", []), 1)
     away_rb_block = _bold_lines(away_off.get("rb", []), 3)
     away_wr_block = _bold_lines(away_off.get("wr", []), 3)
     away_te_block = _bold_lines(away_off.get("te", []), 1)
@@ -357,4 +357,93 @@ def write_txt_templates_with_depth(df: pd.DataFrame, soup: BeautifulSoup,
 
         html = render_game_html(row, away_off, home_off, season_year=season_year)
 
-        away = aw
+        away = away_abbr or "AWAY"
+        home = home_abbr or "HOME"
+        week = int(row.get("week", 0))
+        fname = f"W{week:02d}_{safe_slug(away)}_at_{safe_slug(home)}.txt"
+        path = os.path.join(out_dir, fname)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(html)
+        written.append(path)
+
+    return written
+
+def zip_files(file_paths: list[str]) -> bytes:
+    bio = io.BytesIO()
+    with zipfile.ZipFile(bio, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for p in file_paths:
+            arc = os.path.basename(p)
+            zf.write(p, arcname=arc)
+    bio.seek(0)
+    return bio.read()
+
+# ----------------------- Streamlit UI -----------------------
+st.set_page_config(page_title="NFL .txt Generator (No Selenium)", page_icon="🏈", layout="wide")
+st.title("🏈 NFL Game .txt Generator (Schedule + Ourlads) — Streamlit Cloud Safe")
+st.caption("HTTP-only scraping (no Chrome) ➜ one HTML-in-.txt per game, plus ZIP download.")
+
+left, right = st.columns([2, 1])
+
+with left:
+    season_pick = st.radio(
+        "Season type",
+        ["Regular Season", "Preseason", "Postseason"],
+        index=0, horizontal=True
+    )
+    season_map = {"Regular Season": "reg", "Preseason": "pre", "Postseason": "post"}
+    season_type = season_map[season_pick]
+
+    max_week = 18 if season_type == "reg" else 4
+    week = st.number_input("Week", min_value=1, max_value=max_week, value=2, step=1)
+
+with right:
+    season_year = st.number_input("Season start year", min_value=2000, max_value=2100, value=2025,
+                                  help="Use the season's starting calendar year (Jan/Feb postseason rolls to +1).")
+    out_dir = st.text_input("Output folder", value="out_txt")
+    cache_minutes = st.slider("Cache minutes", 0, 120, 30, help="Avoid repeated scrapes of the same week.")
+    if st.button("Force clear cache"):
+        st.cache_data.clear()
+        st.success("Cache cleared.")
+
+ttl_seconds = int(cache_minutes * 60) if cache_minutes else None
+
+@st.cache_data(ttl=ttl_seconds, show_spinner=False)
+def get_df_cached_http(season_type, week):
+    return scrape_foxsports_schedule_http(season_type=season_type, week=int(week))
+
+run = st.button("Scrape & Generate .txt files")
+
+if run:
+    with st.spinner(f"Scraping {season_pick} – Week {int(week)} and generating .txt files..."):
+        try:
+            df = get_df_cached_http(season_type, week)
+            if df.empty:
+                st.warning("No rows found. The site may have changed its markup or the week has no games.")
+            else:
+                soup = fetch_ourlads_soup()
+                file_paths = write_txt_templates_with_depth(
+                    df, soup, out_dir=out_dir, season_year=int(season_year)
+                )
+                zip_bytes = zip_files(file_paths)
+
+                st.success(f"Created {len(file_paths)} .txt files in '{out_dir}'.")
+                st.download_button(
+                    "Download all as ZIP",
+                    data=zip_bytes,
+                    file_name=f"week_{int(week)}_txt_templates.zip",
+                    mime="application/zip"
+                )
+
+                with st.expander("Show generated filenames"):
+                    st.write("\n".join(os.path.basename(p) for p in file_paths))
+        except Exception as e:
+            st.error(f"Generation failed: {e}")
+            st.exception(e)
+
+st.divider()
+with st.expander("Notes"):
+    st.markdown(
+        "- Uses **requests + BeautifulSoup** for Fox and Ourlads — no Chrome/driver required.\n"
+        "- WRs use LWR/RWR/SWR starters where available; fallback to top WRs rows.\n"
+        "- QB: 1 name; RB: 3 names; TE: 1 name.\n"
+    )
