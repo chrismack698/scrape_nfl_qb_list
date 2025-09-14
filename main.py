@@ -262,8 +262,15 @@ def render_game_html(row: pd.Series, away_off: dict, home_off: dict, season_year
 <p style="text-align: center;"><strong>Kickoff</strong>: {kickoff}</p>
 <p style="text-align: center;"><strong>Location</strong>: {loc}</p>
 <p style="text-align: center;"><strong>Network</strong>: {network}</p>
+
 &nbsp;
+
+<span style="font-size: 20pt; color: #ff0000;"><strong>Game at a Glance</strong></span></p>
+
+&nbsp;
+
 <p style="text-align: center;"><span style="color: {away_hex};"><strong><span style="font-size: 28pt;" data-preserver-spaces="true">{away_name}</span></strong></span></p>
+
 &nbsp;
 
 <span style="font-size: 20pt; color: #3366ff;"><strong>Quarterback</strong></span>
@@ -297,6 +304,15 @@ def render_game_html(row: pd.Series, away_off: dict, home_off: dict, season_year
 <span data-preserver-spaces="true">DISCUSSION</span>
 
 &nbsp;
+
+<span style="font-size: 20pt; color: #ff6600;"><strong>Defense/Special Teams</strong></span>
+
+<b>{away_name}</b>
+
+<span data-preserver-spaces="true">DISCUSSION</span>
+
+
+&nbsp;
 <p style="text-align: center;"><span style="color: {home_hex};"><strong><span style="font-size: 28pt;">{home_name}</span></strong></span></p>
 &nbsp;
 
@@ -304,7 +320,7 @@ def render_game_html(row: pd.Series, away_off: dict, home_off: dict, season_year
 
 {home_qb_block}
 
-DISCUSSION
+<span data-preserver-spaces="true">DISCUSSION</span>
 
 &nbsp;
 
@@ -312,7 +328,7 @@ DISCUSSION
 
 {home_rb_block}
 
-DISCUSSION
+<span data-preserver-spaces="true">DISCUSSION</span>
 
 &nbsp;
 
@@ -320,7 +336,7 @@ DISCUSSION
 
 {home_wr_block}
 
-DISCUSSION
+<span data-preserver-spaces="true">DISCUSSION</span>
 
 &nbsp;
 
@@ -328,7 +344,15 @@ DISCUSSION
 
 {home_te_block}
 
-DISCUSSION
+<span data-preserver-spaces="true">DISCUSSION</span>
+
+&nbsp;
+
+<span style="font-size: 20pt; color: #ff6600;"><strong>Defense/Special Teams</strong></span>
+
+<b>{home_name}</b>
+
+<span data-preserver-spaces="true">DISCUSSION</span>
 """.strip()
     return html
 
